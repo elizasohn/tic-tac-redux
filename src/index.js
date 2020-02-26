@@ -8,7 +8,7 @@ class Square extends React.Component {
     this.state = {
       value: null
     };
-  }
+  }``
 
   render() {
     return (
