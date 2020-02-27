@@ -1,26 +1,43 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
+import { createStore } from "redux";
+import { Provider, connect } from "react-redux";
+
+const initialState = {
+  squares: Array(9).fill(null),
+  xIsNext: true
+};
+
+const reducer = (state = initialState, action) => {
+  let newState;
+  switch (action.type) {
+    case "PLAY_SPOT":
+      const newSquares = [...state.squares];
+      newSquares[action.id] = state.xIsNext ? "X" : "o";
+      newState = Object.assign({}, state, { squares: newSquares });
+      console.log(action);
+
+      return newState;
+    case "CHANGE_TURN":
+      newState = Object.assign({}, state, { xIsNext: !state.xIsNext });
+      return newState;
+    default:
+      return state;
+  }
+};
+
+const store = createStore(reducer);
 
 function Square(props) {
   return (
-    <button className="square" onClick={props.onClick}>
+    <button className="square" onClick={props.clickHandler}>
       {props.value}
     </button>
   );
 }
 
 class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      squares: Array(9).fill(null),
-      xIsNext: true
-    };
-    this.handleClick = this.handleClick.bind(this);
-    this.calculateWinner = this.calculateWinner.bind(this);
-  }
-
   calculateWinner(squares) {
     const lines = [
       [0, 1, 2],
@@ -46,34 +63,32 @@ class Board extends React.Component {
   }
 
   handleClick(i) {
-    const squares = this.state.squares.slice();
+    const squares = store.getState().squares.slice();
     if (this.calculateWinner(squares) || squares[i]) {
       return;
     }
-    squares[i] = this.state.xIsNext ? "X" : "o";
-    this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext
-    });
+    squares[i] = store.getState().xIsNext ? "X" : "o";
+    store.dispatch({ type: "PLAY_SPOT", id: i });
+    store.dispatch({ type: "CHANGE_TURN" });
   }
 
   renderSquare(i) {
     return (
       <Square
-        // i={i}
-        value={this.state.squares[i]}
-        onClick={() => this.handleClick(i)}
+        id={i}
+        clickHandler={() => this.handleClick(i)}
+        value={store.getState().squares[i]}
       />
     );
   }
 
   render() {
-    const winner = this.calculateWinner(this.state.squares);
+    const winner = this.calculateWinner(store.getState().squares);
     let status;
     if (winner) {
       status = `Winner: ${winner}`;
     } else {
-      status = `Next player: ${this.state.xIsNext ? "X" : "o"}`;
+      status = `Next player: ${store.getState().xIsNext ? "X" : "o"}`;
     }
 
     return (
@@ -115,6 +130,16 @@ class Game extends React.Component {
   }
 }
 
+const App = () => {
+  return (
+    <Provider store={store}>
+      <Game />
+    </Provider>
+  );
+};
+
+connect()(App);
+
 // ========================================
 
-ReactDOM.render(<Game />, document.getElementById("root"));
+ReactDOM.render(<App />, document.getElementById("root"));
